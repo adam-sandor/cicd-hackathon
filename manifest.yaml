@@ -1,0 +1,47 @@
+kind: DeploymentConfig
+apiVersion: apps.openshift.io/v1
+metadata:
+    name: service1
+spec:
+    {{ .dutchservice.upgradestrategy }}
+    replicas: {{ .dutchservice.replicas }}
+    selector:
+      name: service1
+    template:
+      metadata:
+        labels:
+          name: service1
+      spec:
+        containers:
+        - name: service1
+          image: adamsandor83/service1:[VERSION]
+          ports:
+          - containerPort: 8080
+            name: web
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 3
+            timeoutSeconds: 1
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+---
+kind: Service
+apiVersion: v1
+metadata:
+    name: dutchservice
+spec:
+    ports:
+    - name: web
+      port: 80
+      targetPort: 8080
+      nodePort: 32346
+    selector:
+      name: service1
+    type: NodePort
+    sessionAffinity: None
